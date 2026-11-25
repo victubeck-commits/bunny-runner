@@ -361,6 +361,22 @@
     }
   }
 
+  // Sombra no chão: encolhe e desaparece conforme o coelho sobe.
+  function drawShadow() {
+    if (player.grounded) return;
+    const rise = Math.max(0, Math.min(1, (GROUND_Y - STAND_H - player.y) / 60));
+    ctx.fillStyle = isNight
+      ? 'rgba(255,255,255,' + (0.30 * (1 - rise)) + ')'
+      : 'rgba(0,0,0,' + (0.30 * (1 - rise)) + ')';
+    ctx.beginPath();
+    ctx.ellipse(
+      player.x + STAND_W / 2, GROUND_Y + 2,
+      (STAND_W / 2) * (1 - 0.4 * rise), 2.5 * (1 - 0.4 * rise),
+      0, 0, Math.PI * 2
+    );
+    ctx.fill();
+  }
+
   function drawBird(o) {
     ctx.save();
     ctx.translate(o.x + BIRD_W / 2, o.y + BIRD_H / 2);
@@ -384,19 +400,27 @@
   function drawPlayer() {
     const duck = player.ducking;
     const h = duck ? DUCK_H : STAND_H;
-    const sy = h / STAND_H;
-    const sx = duck ? 1.06 : 1;
+    let sy = h / STAND_H;
+    let sx = duck ? 1.06 : 1;
 
     ctx.save();
-    ctx.translate(player.x + STAND_W / 2, GROUND_Y);
+    // Os pés acompanham player.y: no ar o coelho realmente sobe na tela.
+    ctx.translate(player.x + STAND_W / 2, player.y + h);
 
     let angle;
     if (state === 'OVER') {
-      angle = -0.22;
+      angle = -0.30;
     } else if (state === 'PLAYING') {
-      if (!player.grounded) angle = player.vy < 0 ? -0.07 : 0.09;
-      else angle = (player.runFrame % 8 < 4 ? 0.025 : -0.025) +
-                   Math.sin(player.runFrame * 0.35) * 0.012;
+      if (!player.grounded) {
+        // Salto bem legível: inclinação forte + leve esticamento/achatamento.
+        const rising = player.vy < 0;
+        angle = rising ? -0.24 : 0.26;
+        sy *= rising ? 1.06 : 0.94;
+        sx *= rising ? 0.96 : 1.05;
+      } else {
+        angle = (player.runFrame % 8 < 4 ? 0.025 : -0.025) +
+                Math.sin(player.runFrame * 0.35) * 0.012;
+      }
       angle -= 0.16 * startAnim;
     } else {
       angle = Math.sin(tickCount * 0.05) * 0.01;
@@ -476,6 +500,7 @@
     }
     for (const c of clouds) drawCloud(c, pal.cloud);
     drawGround(pal.fg);
+    drawShadow();
     for (const o of obstacles) drawObstacle(o, pal.fg);
     drawPlayer();
     ctx.restore();
