@@ -1,0 +1,91 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #ffffff;
+  font-family: "Courier New", Courier, monospace;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game {
+  width: 100%;
+  max-width: 640px;
+  padding: 0 20px;
+}
+
+.stage {
+  width: 100%;
+  line-height: 0;
+}
+
+canvas#game {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #ffffff;
+  cursor: pointer;
+  outline: none;
+}
+
+.hint {
+  margin: 12px 0 0;
+  text-align: center;
+  color: #a5a5a5;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
+.mobile-controls {
+  display: none;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.duck-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 2px solid #535353;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #535353;
+  font: bold 13px "Courier New", Courier, monospace;
+  letter-spacing: 1px;
+  padding: 10px 26px;
+  cursor: pointer;
+  touch-action: none;
+  transition: background-color 80ms linear, color 80ms linear;
+}
+
+.duck-btn.active {
+  background: #535353;
+  color: #ffffff;
+}
+
+@media (pointer: coarse), (max-width: 600px) {
+  .mobile-controls { display: flex; }
+  canvas#game { cursor: default; }
+}
+
+@media (max-width: 600px) {
+  .game { padding: 0 12px; }
+  .hint { font-size: 10px; }
+}
+
+@media (max-height: 300px) {
+  body { align-items: flex-start; }
+  .hint { margin-top: 6px; }
+  .mobile-controls { margin-top: 6px; }
+  .duck-btn { padding: 6px 20px; }
+}
