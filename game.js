@@ -498,25 +498,36 @@
 
   /* ============================ Controles ============================== */
 
-  const PREVENT_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'];
+  // Aceita e.code (navegadores modernos) e e.key/keyCode (fallback).
+  function keyName(e) {
+    if (e.code) return e.code;
+    if (e.key === ' ' || e.key === 'Spacebar') return 'Space';
+    return e.key || '';
+  }
 
   window.addEventListener('keydown', function (e) {
-    if (PREVENT_KEYS.indexOf(e.code) !== -1) e.preventDefault();
+    const c = keyName(e);
+    const isDown = c === 'ArrowDown' || c === 'Down' || e.keyCode === 40;
+    const isSpace = c === 'Space' || e.keyCode === 32;
+    const isUp = c === 'ArrowUp' || c === 'Up' || e.keyCode === 38;
+    const isEnter = c === 'Enter' || e.keyCode === 13;
 
-    if (e.code === 'ArrowDown') { input.keyDuck = true; return; }
+    if (isDown || isSpace || isUp || isEnter) e.preventDefault();
 
-    if (e.code === 'Space' || e.code === 'ArrowUp') {
+    if (isDown) { input.keyDuck = true; return; }
+
+    if (isSpace || isUp) {
       if (e.repeat) return;
-      if (state !== 'PLAYING') { startGame(); jump(); }
-      else jump();
-    } else if (e.code === 'Enter') {
+      pressAction();
+    } else if (isEnter) {
       if (e.repeat) return;
       if (state !== 'PLAYING') startGame();
     }
   });
 
   window.addEventListener('keyup', function (e) {
-    if (e.code === 'ArrowDown') input.keyDuck = false;
+    const c = keyName(e);
+    if (c === 'ArrowDown' || c === 'Down' || e.keyCode === 40) input.keyDuck = false;
   });
 
   window.addEventListener('blur', function () {
@@ -527,25 +538,63 @@
 
   let touchStartY = null;
 
-  canvas.addEventListener('pointerdown', function (e) {
-    e.preventDefault();
-    try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-    if (state !== 'PLAYING') { startGame(); jump(); return; }
-    if (e.pointerType === 'touch') touchStartY = e.clientY;
-    else jump();                        // clique do mouse também pula
-  });
+  function isDuckButton(target) {
+    return target === duckBtn || (duckBtn.contains && duckBtn.contains(target));
+  }
 
-  canvas.addEventListener('pointerup', function (e) {
-    if (e.pointerType === 'touch' && touchStartY !== null && state === 'PLAYING') {
-      const dy = e.clientY - touchStartY;
-      if (dy > 28) input.duckUntil = performance.now() + 650; // gesto: arrastar para baixo
-      else jump();
-    }
-    touchStartY = null;
-  });
+  function pressAction() {
+    if (state !== 'PLAYING') { startGame(); jump(); }
+    else jump();
+  }
 
-  canvas.addEventListener('pointercancel', function () { touchStartY = null; });
-  canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  // Clique/toque em qualquer lugar da página inicia ou pula (como no Dino original).
+  if (window.PointerEvent) {
+    window.addEventListener('pointerdown', function (e) {
+      if (isDuckButton(e.target)) return;
+      e.preventDefault();
+      if (state !== 'PLAYING') { pressAction(); return; }
+      if (e.pointerType === 'touch') touchStartY = e.clientY;
+      else pressAction();
+    });
+
+    window.addEventListener('pointerup', function (e) {
+      if (isDuckButton(e.target)) return;
+      if (e.pointerType === 'touch' && touchStartY !== null && state === 'PLAYING') {
+        const dy = e.clientY - touchStartY;
+        if (dy > 28) input.duckUntil = performance.now() + 650; // gesto: arrastar para baixo
+        else pressAction();
+      }
+      touchStartY = null;
+    });
+
+    window.addEventListener('pointercancel', function () { touchStartY = null; });
+    window.addEventListener('contextmenu', function (e) {
+      if (!isDuckButton(e.target)) e.preventDefault();
+    });
+  } else {
+    // Fallback para navegadores sem Pointer Events.
+    window.addEventListener('click', function (e) {
+      if (isDuckButton(e.target)) return;
+      e.preventDefault();
+      pressAction();
+    });
+    window.addEventListener('touchstart', function (e) {
+      if (isDuckButton(e.target)) return;
+      e.preventDefault();
+      if (state !== 'PLAYING') pressAction();
+      else touchStartY = e.touches[0].clientY;
+    }, { passive: false });
+    window.addEventListener('touchend', function (e) {
+      if (isDuckButton(e.target)) return;
+      e.preventDefault();
+      if (state === 'PLAYING') {
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (dy > 28) input.duckUntil = performance.now() + 650;
+        else pressAction();
+      }
+      touchStartY = null;
+    }, { passive: false });
+  }
 
   duckBtn.addEventListener('pointerdown', function (e) {
     e.preventDefault();
@@ -594,6 +643,7 @@
     loaded++;
     if (loaded === 2) {
       resize();
+      try { canvas.focus({ preventScroll: true }); } catch (err) { canvas.focus(); }
       requestAnimationFrame(frame);
     }
   }
