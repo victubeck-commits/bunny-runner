@@ -15,7 +15,7 @@
 
   const STAND_W = 33;            // largura do coelho em pé
   const STAND_H = 58;            // altura do coelho em pé
-  const DUCK_H = 36;             // altura do coelho agachado
+  const DUCK_H = 32;             // altura do coelho agachado
 
   const BIRD_W = 46;             // tamanho do pássaro na tela
   const BIRD_H = 43;
@@ -401,7 +401,7 @@
     const duck = player.ducking;
     const h = duck ? DUCK_H : STAND_H;
     let sy = h / STAND_H;
-    let sx = duck ? 1.06 : 1;
+    let sx = duck ? 1.14 : 1;
 
     ctx.save();
     // Os pés acompanham player.y: no ar o coelho realmente sobe na tela.
@@ -417,6 +417,9 @@
         angle = rising ? -0.24 : 0.26;
         sy *= rising ? 1.06 : 0.94;
         sx *= rising ? 0.96 : 1.05;
+      } else if (duck) {
+        // Corre agachado: bem mais baixo, inclinado para frente e com balanço.
+        angle = 0.30 + Math.sin(player.runFrame * 0.35) * 0.035;
       } else {
         angle = (player.runFrame % 8 < 4 ? 0.025 : -0.025) +
                 Math.sin(player.runFrame * 0.35) * 0.012;
